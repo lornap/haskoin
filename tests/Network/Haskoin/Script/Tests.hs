@@ -39,7 +39,6 @@ import qualified Data.ByteString as BS
 
 import Numeric (readHex)
 import Text.Read (readMaybe)
-
 import Network.Haskoin.Test
 import Network.Haskoin.Transaction
 import Network.Haskoin.Script
@@ -55,6 +54,7 @@ import Network.Haskoin.Internals
     , encodeBool
     , execScript
     )
+import Network.Haskoin.Test.Util.JsonTestParser ( parseScript, parseFlags )
 
 tests :: [Test]
 tests = 
@@ -180,67 +180,6 @@ rejectSignature :: SigCheck
 rejectSignature _ _ _ = False
 
 {- Parse tests from bitcoin-qt repository -}
-
-type ParseError = String
-
-parseHex' :: String -> Maybe [Word8]
-parseHex' (a:b:xs) = case readHex $ [a, b] :: [(Integer, String)] of
-                      [(i, "")] -> case parseHex' xs of
-                                    Just ops -> Just $ fromIntegral i:ops
-                                    Nothing -> Nothing
-                      _ -> Nothing
-parseHex' [_] = Nothing
-parseHex' [] = Just []
-
-parseFlags :: String -> [ Flag ]
-parseFlags "" = []
-parseFlags s = map read . splitOn "," $ s
-
-parseScript :: String -> Either ParseError Script
-parseScript scriptString =
-      do bytes <- LBS.pack <$> parseBytes scriptString
-         script <- decodeScript bytes
-         when (encode script /= bytes) $
-            Left "encode script /= bytes"
-         when (decode (encode script) /= script) $
-            Left "decode (encode script) /= script"
-         return script
-      where
-          decodeScript bytes = case decodeOrFail bytes of
-            Left (_, _, e) -> Left $ "decode error: " ++ e
-            Right (_, _, Script s) -> Right $ Script s
-          parseBytes :: String -> Either ParseError [Word8]
-          parseBytes string = concat <$> mapM parseToken (words string)
-          parseToken :: String -> Either ParseError [Word8]
-          parseToken tok =
-              case alternatives of
-                    (ops:_) -> Right ops
-                    _ -> Left $ "unknown token " ++ tok
-              where alternatives :: [[Word8]]
-                    alternatives = catMaybes  [ parseHex
-                                              , parseInt
-                                              , parseQuote
-                                              , parseOp
-                                              ]
-                    parseHex | "0x" `isPrefixOf` tok = parseHex' (drop 2 tok)
-                             | otherwise = Nothing
-                    parseInt = fromInt . fromIntegral <$>
-                               (readMaybe tok :: Maybe Integer)
-                    parseQuote | tok == "''" = Just [0]
-                               | (head tok) == '\'' && (last tok) == '\'' =
-                                 Just $ encodeBytes $ opPushData $ BS.pack
-                                      $ map (fromIntegral . ord)
-                                      $ init . tail $ tok
-                               | otherwise = Nothing
-                    fromInt :: Int64 -> [Word8]
-                    fromInt n | n ==  0 = [0x00]
-                              | n == -1 = [0x4f]
-                              | 1 <= n && n <= 16 = [0x50 + fromIntegral n]
-                              | otherwise = encodeBytes
-                                                $ opPushData $ BS.pack
-                                                $ encodeInt n
-                    parseOp = encodeBytes <$> (readMaybe $ "OP_" ++ tok)
-                    encodeBytes = LBS.unpack . encode
 
 testFile :: String -> String -> Bool -> Test
 testFile groupLabel path expected = buildTest $ do
