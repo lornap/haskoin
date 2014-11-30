@@ -232,3 +232,6 @@ instance Binary OutPoint where
         return $ OutPoint h i
     put (OutPoint h i) = put h >> putWord32le i
 
+instance Ord OutPoint where
+  compare p1 p2 = compare ( outPointHash p1, outPointIndex p1 )
+                          ( outPointHash p2, outPointIndex p2 )
