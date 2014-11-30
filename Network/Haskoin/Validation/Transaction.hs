@@ -1,6 +1,7 @@
 module Network.Haskoin.Validation.Transaction
 (
   checkTransaction
+, validateAllInputs
 )
 where
 
@@ -16,6 +17,10 @@ import Control.Monad
 import Data.List ( sort )
 
 import Network.Haskoin.Validation.Error
+import Network.Haskoin.Data.Blockchain (
+    BlockChainDataRequest
+  , pubScriptFromOutPoint )
+import Network.Haskoin.Script.Evaluator ( Flag, verifySpend )
 
 checkNoDuplicates :: ( Ord a ) => [a] -> Bool
 checkNoDuplicates as = let sortedAs = sort as in
@@ -64,3 +69,11 @@ checkTransaction tx = do
     else return ()
 
   return True
+
+validateAllInputs :: [ Flag ] -> Tx -> BlockChainDataRequest ( Bool )
+validateAllInputs flgs tx = do
+    let inputs = ( txIn tx )
+    scripts <- mapM ( pubScriptFromOutPoint . prevOutput ) inputs
+    let enumScripts = zip [0..] scripts
+        results = map (\(i,s) -> verifySpend tx i s flgs ) enumScripts
+    return $ all id results
