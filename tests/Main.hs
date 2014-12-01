@@ -45,6 +45,9 @@ import qualified Network.Haskoin.Json.Tests (tests)
 -- Binary tests
 import qualified Network.Haskoin.Binary.Tests (tests)
 
+-- Validation tests
+import qualified Network.Haskoin.Validation.Tests ( tests )
+
 main :: IO ()
 main = defaultMain
     (  Network.Haskoin.Json.Tests.tests
@@ -72,5 +75,6 @@ main = defaultMain
     ++ Network.Haskoin.Block.Units.tests
     ++ Network.Haskoin.Stratum.Tests.tests
     ++ Network.Haskoin.Stratum.Units.tests
+    ++ Network.Haskoin.Validation.Tests.tests
     )
 
