@@ -3,19 +3,16 @@ module Network.Haskoin.Validation.Tests
  tests
 ) where
 
-import Network.Haskoin.Script.Evaluator ( Flag )
+import Network.Haskoin.Internals ( 
+    Flag
+  , runBlockChainRequestFromMap
+  , checkTransaction
+  , validateAllInputs )
 import Network.Haskoin.Script ( Script(..) )
 import Network.Haskoin.Transaction ( Tx (..), OutPoint(..) )
 import Network.Haskoin.Crypto ( TxHash )
 
-import Network.Haskoin.Data.Blockchain (
-  runBlockChainRequestFromMap )
-
 import Network.Haskoin.Test.Util.JsonTestParser
-
-import Network.Haskoin.Validation.Transaction (
-   checkTransaction
- , validateAllInputs )
 
 import Test.Framework ( Test, buildTest, testGroup )
 import Test.Framework.Providers.HUnit (testCase)

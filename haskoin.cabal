@@ -68,6 +68,7 @@ library
                    Network.Haskoin.Crypto.NormalizedKeys
                    Network.Haskoin.Crypto.ECDSA
                    Network.Haskoin.Crypto.Mnemonic
+                   Network.Haskoin.Data.Blockchain
                    Network.Haskoin.Node.Types
                    Network.Haskoin.Node.Message
                    Network.Haskoin.Node.Bloom
@@ -80,6 +81,8 @@ library
                    Network.Haskoin.Script.Evaluator
                    Network.Haskoin.Transaction.Types
                    Network.Haskoin.Transaction.Builder
+                   Network.Haskoin.Validation.Error
+                   Network.Haskoin.Validation.Transaction
                    Network.Haskoin.Block.Types
                    Network.Haskoin.Block.Merkle
                    Network.Haskoin.Block.HeaderChain
@@ -117,6 +120,7 @@ library
                  , deepseq                  >= 1.3          && < 1.4
                  , data-default             >= 0.5          && < 0.6
                  , either                   >= 4.3          && < 4.4
+                 , free                     >= 4.8          && < 4.11
                  , json-rpc                 >= 0.2.0.1      && < 0.3
                  , leveldb-haskell          >= 0.6          && < 0.7
                  , monad-control            >= 0.3          && < 1.1
@@ -188,6 +192,8 @@ test-suite test-haskoin
                  , test-framework                 >= 0.8        && < 0.9 
                  , test-framework-quickcheck2     >= 0.3        && < 0.4 
                  , test-framework-hunit           >= 0.3        && < 0.4 
+                 , text                           >= 0.11         && < 1.3
+                 , vector                         >= 0.10.9.1   && < 0.10.10
 
     ghc-options: -Wall 
     hs-source-dirs: tests
