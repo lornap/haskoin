@@ -1,3 +1,7 @@
+{-|
+  Validation routines for transactions.
+-}
+
 module Network.Haskoin.Validation.Transaction
 (
   checkTransaction
@@ -70,7 +74,11 @@ checkTransaction tx = do
 
   return True
 
-validateAllInputs :: [ Flag ] -> Tx -> BlockChainDataRequest ( Bool )
+-- | Validates all inputs for a given trasaction by testing their
+-- scripts against the reference output scripts.
+validateAllInputs :: [ Flag ]
+                  -> Tx 
+                  -> BlockChainDataRequest ( Bool )
 validateAllInputs flgs tx = do
     let inputs = ( txIn tx )
     scripts <- mapM ( pubScriptFromOutPoint . prevOutput ) inputs
