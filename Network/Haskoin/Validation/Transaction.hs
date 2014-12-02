@@ -35,10 +35,6 @@ sortedCheckNoDuplicates [] = True
 sortedCheckNoDuplicates [_] = True
 sortedCheckNoDuplicates (a:b:bs) = a /= b && sortedCheckNoDuplicates (b:bs)
 
-isEmpty :: [a]->Bool
-isEmpty [] = True
-isEmpty _  = False
-
 checkTxOutput :: TxOut -> VError Bool
 checkTxOutput out = do
   if outValue out > maxSatoshi
@@ -49,11 +45,11 @@ checkTxOutput out = do
 -- block chain queries )
 checkTransaction :: Tx -> VError Bool
 checkTransaction tx = do
-  if isEmpty . txIn $ tx
+  if null . txIn $ tx
     then throwError $ TxInvalid "txIn empty"
     else return ()
 
-  if isEmpty. txOut $ tx
+  if null. txOut $ tx
     then throwError $ TxInvalid "txOut empty"
     else return ()
   
