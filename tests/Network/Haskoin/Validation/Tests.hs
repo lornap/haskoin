@@ -7,12 +7,19 @@ import Network.Haskoin.Internals (
     Flag
   , runBlockChainRequestFromMap
   , checkTransaction
+  , checkCBTransaction
   , validateAllInputs )
 import Network.Haskoin.Script ( Script(..) )
-import Network.Haskoin.Transaction ( Tx (..), OutPoint(..) )
+import Network.Haskoin.Transaction ( 
+       Tx (..)
+     , CoinbaseTx
+     , OutPoint(..)
+     , prevOutput )
 import Network.Haskoin.Crypto ( TxHash )
 
 import Network.Haskoin.Test.Util.JsonTestParser
+
+import Network.Haskoin.Util ( hexToBS, maybeToEither, decodeToEither )
 
 import Test.Framework ( Test, buildTest, testGroup )
 import Test.Framework.Providers.HUnit (testCase)
@@ -22,6 +29,7 @@ import Control.Applicative ( (<$>), (<*>) )
 import Control.Monad ( mzero )
 import qualified Data.ByteString.Lazy as BSL (readFile, ByteString)
 import Data.Aeson
+import Data.Aeson.Types ( Parser )
 
 import Control.Monad.Except ( runExcept )
 
@@ -49,7 +57,7 @@ instance FromJSON FileItem where
    parseJSON _ = mzero
 
 data FileTestCase = FileTestCase { inputs :: [ TCInput ]
-                                 , testTx :: Tx
+                                 , testTx :: GenericTx
                                  , flags  :: [ Flag ]
                                  } deriving ( Show )
 
@@ -59,6 +67,23 @@ instance FromJSON FileTestCase where
                         <*> parseJSON ( v ! 1 )
                         <*> ( parseFlags <$> parseJSON ( v ! 2 ) )
     parseJSON _ = mzero
+
+data GenericTx = Std Tx | Coinbase CoinbaseTx deriving ( Show )
+
+instance FromJSON GenericTx where
+    parseJSON v = 
+       let ptx = ( parseJSON v :: Parser Tx )
+           pcbtx = ( parseJSON v :: Parser CoinbaseTx )
+        in do         
+           checkTx <- ptx
+           if ( (length . txIn $ checkTx) == 1 )
+              && ( prevOutput (txIn checkTx !! 0) == ( OutPoint 0 (-1) ) )
+              then Coinbase <$> pcbtx -- Is coinbase
+              else Std <$> ptx
+
+instance FromJSON CoinbaseTx where
+    parseJSON = withText "coinbase transaction" $ \t -> either fail return $
+        maybeToEither "tx not hex" (hexToBS $ T.unpack t) >>= decodeToEither
 
 data TCInput = TCInput { prevOutHash :: TxHash
                        , prevOutIndx :: Word32
@@ -101,21 +126,25 @@ labelItems x@( _:ls ) =
         labeledPairs = mapMaybe checkType pairs
     in zipWith ( \a (b,c) -> (a,b,c) ) [0..] labeledPairs
 
-prepTestData :: FileTestCase -> ( M.Map OutPoint Script, Tx )
+prepTestData :: FileTestCase -> ( M.Map OutPoint Script, GenericTx )
 prepTestData ftc = let m = buildMap ( inputs ftc ) in ( m, testTx ftc )
     where buildMap = M.fromList . ( map toPairs )
           toPairs tci = ( OutPoint ( prevOutHash tci ) ( prevOutIndx tci )
                         , prevOutScriptPubKey tci )
 
 twoPartTxCheck :: M.Map OutPoint Script -- ^ Prev input data
-               -> Tx                    -- ^ Transaction under test
+               -> GenericTx             -- ^ Transaction under test
                -> [ Flag ]              -- ^ Script Flags
                -> Bool                  -- ^ Result
-twoPartTxCheck d tx flgs = structureCheck && spendCheck
+twoPartTxCheck d ( Std tx ) flgs = structureCheck && spendCheck
     where structureCheck = case runExcept $ checkTransaction tx of
               Right True -> True
               _ -> False
           spendCheck = case runBlockChainRequestFromMap d M.empty ( validateAllInputs flgs tx ) of
+              Right True -> True
+              _ -> False
+twoPartTxCheck _ ( Coinbase tx ) _ = structureCheck
+    where structureCheck = case runExcept $ checkCBTransaction tx of
               Right True -> True
               _ -> False
 

@@ -5,6 +5,7 @@
 module Network.Haskoin.Validation.Transaction
 (
   checkTransaction
+, checkCBTransaction
 , validateAllInputs
 )
 where
@@ -12,6 +13,7 @@ where
 import Network.Haskoin.Transaction ( Tx(..)
                                    , TxIn(..)
                                    , TxOut(..)
+                                   , CoinbaseTx(..)
                                    )
 import Network.Haskoin.Util ( encode' )
 import Network.Haskoin.Constants (maxSatoshi, maxBlockSize)
@@ -66,6 +68,35 @@ checkTransaction tx = do
 
   if not . checkNoDuplicates $ map prevOutput $ txIn tx
     then throwError $ TxInvalid "Duplicate input points"
+    else return ()
+
+  return True
+
+checkCBTransaction :: CoinbaseTx -> VError Bool
+checkCBTransaction tx = do
+  -- Some code duplication here
+  if BS.null . cbData $ tx
+    then throwError $ TxInvalid "cbData empty"
+    else return ()
+
+  if null. cbOut $ tx
+    then throwError $ TxInvalid "cbOut empty"
+    else return ()
+  
+  if ( BS.length . encode' $ tx ) > maxBlockSize
+     then throwError $ TxInvalid "size limits failed"
+     else return ()
+
+  forM_ ( cbOut tx ) checkTxOutput
+
+  let totOutput = sum . ( map outValue ) $ cbOut tx
+  if totOutput > maxSatoshi
+    then throwError $ TxInvalid "Total output sum too large"
+    else return ()
+
+  let l = BS.length . cbData $ tx 
+  if l < 2 || l > 100
+    then throwError $ TxInvalid "Coinbase script size."
     else return ()
 
   return True
