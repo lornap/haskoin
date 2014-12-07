@@ -151,6 +151,13 @@ instance Binary CoinbaseTx where
         forM_ os put
         putWord32le lt
 
+instance FromJSON CoinbaseTx where
+    parseJSON = withText "coinbase transaction" $ \t -> either fail return $
+        maybeToEither "tx not hex" (hexToBS $ T.unpack t) >>= decodeToEither
+
+instance ToJSON CoinbaseTx where
+    toJSON = String . T.pack . bsToHex . encode'
+
 -- | Data type representing a transaction input.
 data TxIn = 
     TxIn { 

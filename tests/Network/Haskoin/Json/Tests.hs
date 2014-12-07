@@ -16,6 +16,7 @@ tests =
         , testProperty "OutPoint" $ \(ArbitraryOutPoint x) -> metaID x
         , testProperty "Address" $ \(ArbitraryAddress x) -> metaID x
         , testProperty "Tx" $ \(ArbitraryTx x) -> metaID x
+        , testProperty "CoinbaseTx" $ \(ArbitraryCoinbaseTx x) -> metaID x
         , testProperty "TxHash" (metaID :: TxHash -> Bool)
         , testProperty "BlockHash" (metaID :: BlockHash -> Bool)
         , testProperty "Word256" (metaID :: Word256 -> Bool)

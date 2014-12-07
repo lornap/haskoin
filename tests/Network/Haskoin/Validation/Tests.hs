@@ -81,10 +81,6 @@ instance FromJSON GenericTx where
               then Coinbase <$> pcbtx -- Is coinbase
               else Std <$> ptx
 
-instance FromJSON CoinbaseTx where
-    parseJSON = withText "coinbase transaction" $ \t -> either fail return $
-        maybeToEither "tx not hex" (hexToBS $ T.unpack t) >>= decodeToEither
-
 data TCInput = TCInput { prevOutHash :: TxHash
                        , prevOutIndx :: Word32
                        , prevOutScriptPubKey :: Script
