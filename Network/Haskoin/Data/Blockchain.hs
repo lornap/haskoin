@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveFunctor #-}
 {-|
 
 A monad for making Blockchain Data Requests.
@@ -33,11 +34,7 @@ import Network.Haskoin.Crypto ( TxHash )
 data BlockChainDataRequestF x
     = TxFromHash TxHash ( Tx -> x )
     | PubScriptFromOutPoint OutPoint ( Script -> x )
-
--- GHC May be able to auto-derive this.
-instance Functor BlockChainDataRequestF where
-    fmap f ( TxFromHash hash k ) = TxFromHash hash ( f . k )
-    fmap f ( PubScriptFromOutPoint op k ) = PubScriptFromOutPoint op ( f . k )
+    deriving ( Functor )
 
 type BlockChainDataRequest = Free BlockChainDataRequestF
 
